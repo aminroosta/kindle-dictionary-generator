@@ -10,7 +10,7 @@ const cheerio = require('cheerio')
 const axios = require('axios');
 const progress = require('progress');
 
-const REQUEST_WORKERS = 3;
+const REQUEST_WORKERS = 8;
 const dictionary = { };
 
 program
@@ -23,6 +23,10 @@ program
 
 async function request(array, bar) {
     for(const word of array) {
+		if(dictionary[word]) {
+			bar.tick({token1: word.green});
+			continue;
+		}
         try {
             const thtml = await axios.get(`http://app.vocabulary.com/app/1.0/dictionary/search?word=${word}`)
             const $t = cheerio.load(thtml.data);
@@ -32,6 +36,7 @@ async function request(array, bar) {
             };
             bar.tick({token1: word.blue});
         } catch(e) {
+            dictionary[word] = { short: '', long : '' };
             bar.tick({token1: word.red});
         }
     }
@@ -59,17 +64,16 @@ async function parse_html(html) {
     const text = $.text();
     const words = text.split(/\s+/)
         .filter(w => (
-                (!w) || (w.indexOf("’") === -1)
+				(!w) || (w.indexOf("’") === -1)
             )
         )
-        .map(w => w.replace('-', ' ').replace('.', '').replace(',', ''))
-        .filter(w => w.length >= 4)
-        .map(w => w.toLowerCase())
-        .slice(0, 20);
+        .map(w => w.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,' '))
+        .map(w => w.toLowerCase().trim())
+        .filter(w => w.length >= 3 && /^[A-Za-z]+$/.test(w));
 
     const uwords = Array.from(new Set(words))
     console.log(`translating ${uwords.length} words ...`.blue);
-     var bar = new progress('  downloading [:bar] :current/:total (:percent) :rate/bps :etas :token1', {
+     var bar = new progress('  downloading [:bar] :current/:total (:percent) :rate/wps :etas :token1'.green, {
         complete: '=',
         incomplete: ' ',
         width: 50,
@@ -79,8 +83,6 @@ async function parse_html(html) {
     await Promise.all(
         chunkify(uwords, REQUEST_WORKERS).map(arr => request(arr, bar))
     );
-
-    // console.warn(JSON.stringify(words));
 }
 
 
@@ -88,12 +90,14 @@ async function read_chapters(file) {
     const chapter_keys = Object.keys(file.manifest);
 
     const getChapter = util.promisify(file.getChapter.bind(file));
-    for(const key of chapter_keys.slice(7,8)) {
+    for(const key of chapter_keys) {
         try {
             const text = await getChapter(key);
             console.log(`processing chapter: ${key} ...`.blue);
             await parse_html(text);
-        } catch(e) { }
+        } catch(e) {
+			console.error(e.message.red);
+		}
     }
 }
 
