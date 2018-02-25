@@ -71,7 +71,7 @@ async function parse_html(html) {
         .map(w => w.toLowerCase().trim())
         .filter(w => w.length >= 3 && /^[A-Za-z]+$/.test(w));
 
-    const uwords = Array.from(new Set(words))
+    const uwords = Array.from(new Set(words));
     console.log(`translating ${uwords.length} words ...`.blue);
      var bar = new progress('  downloading [:bar] :current/:total (:percent) :rate/wps :etas :token1'.green, {
         complete: '=',
@@ -106,29 +106,27 @@ function write_opf(fileName) {
 	Object.keys(dictionary).map(word => {
 		const {short, long} = dictionary[word];
 		if(short) entries.push(
-		`<idx:entry>
-			<b><idx:orth>${word}
-			</idx:orth> </b> 
-			<br/>
-			${short}
-			<br/>
-			${long}
-		</idx:entry>`
+`<idx:entry>
+	<idx:orth value="${word}">
+		<idx:infl><idx:iform value="${word}"/></idx:infl>
+	</idx:orth>
+	${short}
+    <hr />
+	${long} <br />
+</idx:entry>`
 		);
 	});
 
 	const html = `
-	<?xml version="1.0" encoding="utf-8"?>
-	<html
-		xmlns:idx="www.mobipocket.com"
-		xmlns:mbp="www.mobipocket.com"
-		xmlns:xlink="http://www.w3.org/1999/xlink">
-	<body>
-
-	${entries.join('\n<hr/>\n\n')}
-
-	</body>
-	</html>`;
+<?xml version="1.0" encoding="utf-8"?>
+<html
+    xmlns:idx="www.mobipocket.com"
+    xmlns:mbp="www.mobipocket.com"
+    xmlns:xlink="http://www.w3.org/1999/xlink">
+<body>
+${entries.join('\n\n')}
+</body>
+</html>`;
 
 	
 	const opf = `
@@ -158,6 +156,7 @@ function write_opf(fileName) {
 
 	fs.writeFileSync(`${fileName}.html`, html, 'utf8');
 	fs.writeFileSync(`${fileName}.opf`, opf, 'utf8');
+	fs.writeFileSync(`${fileName}.json`, JSON.stringify(dictionary), 'utf8');
 	console.log();
     console.log(`Wrote ${fileName}.opf & ${fileName}.html`.green);
     console.log(`Type the following command to get your dictionary:`.green);
