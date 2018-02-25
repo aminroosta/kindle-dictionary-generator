@@ -159,7 +159,7 @@ function write_opf(fileName) {
 	fs.writeFileSync(`${fileName}.html`, html, 'utf8');
 	fs.writeFileSync(`${fileName}.opf`, opf, 'utf8');
 	console.log();
-    console.log(`Wrote ${fileName}.opf & ${fileName.html}`.green);
+    console.log(`Wrote ${fileName}.opf & ${fileName}.html`.green);
     console.log(`Type the following command to get your dictionary:`.green);
     console.log(`kindlegen ${fileName}.opf`.blue);
 }
