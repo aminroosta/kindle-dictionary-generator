@@ -9,6 +9,7 @@ const util = require('util');
 const cheerio = require('cheerio')
 const axios = require('axios');
 const progress = require('progress');
+const cache = require('./cache/cache.json');
 
 const REQUEST_WORKERS = 8;
 const dictionary = { };
@@ -23,6 +24,11 @@ program
 
 async function request(array, bar) {
     for(const word of array) {
+        if(cache[word] && !dictionary[word] && cache[word].short) {
+            dictionary[word] = cache[word];
+			bar.tick({token1: word.green});
+            continue;
+        }
 		if(dictionary[word]) {
 			bar.tick({token1: word.green});
 			continue;
